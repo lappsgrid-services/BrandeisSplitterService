@@ -22,6 +22,9 @@ import edu.brandeis.nlp.tokenizer.TokenizedText;
 import org.lappsgrid.api.ProcessingService;
 
 import static org.lappsgrid.discriminator.Discriminators.Uri;
+
+import org.lappsgrid.metadata.IOSpecification;
+import org.lappsgrid.metadata.ServiceMetadata;
 import org.lappsgrid.serialization.Data;
 import org.lappsgrid.serialization.DataContainer;
 import org.lappsgrid.serialization.Serializer;
@@ -48,9 +51,30 @@ public class Splitter implements ProcessingService
 
 
     public Splitter() {
-        
-        // Metadata will be discussed in step 3
-        this.metadata = null;
+
+        ServiceMetadata meta = new ServiceMetadata();
+        meta.setName(this.getClass().getName());
+        meta.setDescription("brandeis splitter takes tokenized input and detects sentences.");
+        meta.setVersion(getVersion());
+        meta.setVendor("http://www.cs.brandeis.edu/");
+        meta.setLicense(Uri.APACHE2);
+
+        IOSpecification requires = new IOSpecification();
+        requires.setEncoding("UTF-8");
+        requires.addLanguage("en");
+        requires.addFormat(Uri.LAPPS);
+        requires.addAnnotation(Uri.TOKEN);
+
+        IOSpecification produces = new IOSpecification();
+        produces.setEncoding("UTF-8");
+        produces.addLanguage("en");
+        produces.addFormat(Uri.LAPPS);
+        produces.addAnnotation(Uri.SENTENCE);
+
+        meta.setRequires(requires);
+        meta.setProduces(produces);
+        Data<ServiceMetadata> data = new Data<> (Uri.META, meta);
+        this.metadata = data.asPrettyJson();
     }
 
     /**
@@ -91,23 +115,22 @@ public class Splitter implements ProcessingService
                 String errorMsg = String.format("Unsupported discriminator: %s", discriminator);
                 return new Data<>(Uri.ERROR, errorMsg).asPrettyJson();
         }
-        // Step #4: Create a new View
-        View view = container.newView();
 
-        // Step #5: Tokenize the text and add annotations.
         String text = container.getText();
+        List<View> tokenViews = container.findViewsThatContain(Uri.TOKEN);
+        View tokenView = tokenViews.get(tokenViews.size() - 1);
 
         // example code on how to run the splitter
 
         Tokenizer tokenizer = new Tokenizer();
         TokenizedText result;
         ArrayList<Token> tokens = new ArrayList<>();
-        List<View> tokenViews = container.findViewsThatContain(Uri.TOKEN);
-        View tokenView = tokenViews.get(tokenViews.size() - 1);
+
+        View view = container.newView();
         for (Annotation token : tokenView.getAnnotations()) {
             int s = Math.toIntExact(token.getStart());
             int e = Math.toIntExact(token.getEnd());
-            String tokenText = text.substring(s, e);
+            String tokenText = text.substring(s, e-1);
             tokens.add(new Token(tokenText, s, e));
         }
         // running the tokenizer in split mode
@@ -116,6 +139,7 @@ public class Splitter implements ProcessingService
         int id = -1;
         for (Sentence s : result.sentences) {
             Annotation a = view.newAnnotation("s" + (++id), Uri.SENTENCE, s.begin, s.end);
+            a.addFeature("text", text.substring(s.begin, s.end-1));
         }
 
         // Step #6: Update the view's metadata. Each view contains metadata about the
