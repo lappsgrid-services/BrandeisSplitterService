@@ -121,12 +121,16 @@ public class Splitter implements ProcessingService
         // Step #6: Update the view's metadata. Each view contains metadata about the
         // annotations it contains, in particular the name of the tool that produced the
         // annotations.
-        view.addContains(Uri.SENTENCE, this.getClass().getName(), "BrandeisSplitter");
+        view.addContains(Uri.SENTENCE, this.getClass().getName(), "BrandeisSplitter-" + getVersion());
 
         // Step #7: Create a DataContainer with the result.
         data = new DataContainer(container);
 
         // Step #8: Serialize the data object and return the JSON.
         return data.asPrettyJson();
+    }
+
+    String getVersion() {
+        return "0.1.0";
     }
 }
