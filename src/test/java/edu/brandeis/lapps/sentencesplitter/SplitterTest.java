@@ -6,6 +6,7 @@ import org.lappsgrid.discriminator.Discriminators;
 import org.lappsgrid.metadata.IOSpecification;
 import org.lappsgrid.metadata.ServiceMetadata;
 import org.lappsgrid.serialization.Data;
+import org.lappsgrid.serialization.DataContainer;
 import org.lappsgrid.serialization.Serializer;
 import org.lappsgrid.serialization.lif.Annotation;
 import org.lappsgrid.serialization.lif.Container;
@@ -23,6 +24,7 @@ public class SplitterTest {
     Splitter splt;
     private List<String> testSents;
     private List<Token> testTokens;
+    private String simpleLif;
     private String tokenizedLif;
 
     @org.junit.Before
@@ -54,6 +56,7 @@ public class SplitterTest {
         Container cont = new Container();
         String testText = String.join("\n\n", testSents);
         cont.setText(testText);
+        simpleLif = new Data<Container>(Discriminators.Uri.LIF, cont).asPrettyJson();
         View tokenView = cont.newView();
         int tid = 0;
         for (Token t : testTokens) {
@@ -65,7 +68,7 @@ public class SplitterTest {
     }
 
     @org.junit.Test
-    public void getMetadata() {
+    public void testMetadata() {
         String json = this.splt.getMetadata();
         Assert.assertNotNull("service.getMetadata() returned null", json);
 
@@ -96,7 +99,19 @@ public class SplitterTest {
     }
 
     @org.junit.Test
-    public void execute() {
+    public void testExecuteWithoutLIF() {
+        System.out.println(splt.execute("This input is not a well-formed LIF JSON"));
+    }
+
+    @org.junit.Test
+    public void testExecuteWithNoTokenizedInput() {
+        System.out.println(simpleLif);
+        System.out.println("=============================");
+        System.out.println(splt.execute(simpleLif));
+    }
+
+    @org.junit.Test
+    public void testExecuteWithTokenizedInput() {
         System.out.println(tokenizedLif);
         System.out.println("=============================");
         System.out.println(splt.execute(tokenizedLif));

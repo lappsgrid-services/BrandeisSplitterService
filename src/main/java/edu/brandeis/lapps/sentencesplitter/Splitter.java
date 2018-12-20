@@ -91,9 +91,8 @@ public class Splitter implements ProcessingService
         try {
             data = Serializer.parse(input, Data.class);
         } catch (Exception e) {
-            data = new Data();
-            data.setDiscriminator(Uri.TEXT);
-            data.setPayload(input);
+            String errorMsg = "Need a LIF JSON input";
+            return new Data<>(Uri.ERROR, errorMsg).asPrettyJson();
         }
 
         final String discriminator = data.getDiscriminator();
@@ -118,6 +117,11 @@ public class Splitter implements ProcessingService
 
         String text = container.getText();
         List<View> tokenViews = container.findViewsThatContain(Uri.TOKEN);
+        if (tokenViews.size() < 1) {
+            String errorMsg = String.format("Need a view with an annotation type: %s", Uri.TOKEN);
+            return new Data<>(Uri.ERROR, errorMsg).asPrettyJson();
+        }
+
         View tokenView = tokenViews.get(tokenViews.size() - 1);
 
         // example code on how to run the splitter
@@ -155,6 +159,6 @@ public class Splitter implements ProcessingService
     }
 
     String getVersion() {
-        return "0.1.0";
+        return "1.0.0";
     }
 }
